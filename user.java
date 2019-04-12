@@ -7,12 +7,12 @@ class User {
     Encrypted. We must never know what the password is, but it should
     be safe to check if it contains one or two specific symbols. */
     private String password;
-    private int phone;
+    private String phone;
     private String email;
     private String type;  // Can be user, donor or charity.
 
     User(
-            String username, String password, int phone, String email,
+            String username, String password, String phone, String email,
             String type) {
         userID = getNewUserID();
         this.username = username;
@@ -35,7 +35,7 @@ class User {
         Intent intent = getIntent();
         username = intent.getStringExtra(RegistrationActivity.USERNAME);
         password = intent.getStringExtra(RegistrationActivity.PASSWORD);
-        phone = intent.getIntExtra(RegistrationActivity.PHONE);
+        phone = intent.getStringExtra(RegistrationActivity.PHONE);
         email = intent.getStringExtra(RegistrationActivity.EMAIL);
         type = intent.getStringExtra(RegistrationActivity.TYPE);
     }

@@ -1,17 +1,14 @@
+import android.content.Intent;
+
+
 /**
-I called it "system" but it's really just a collection of useful
-methods, or the methods that don't need to be in a class. */
+End the current session.
 
-public void register() {
-    //
-}
-
-public void login() {
-    //
-}
-
+We should be fine to just head back to the login activity, might have
+overlooked something though. */
 public void logout() {
-    //
+    Intent intent = new Intent(this, LoginActivity.class);
+    startActivity(intent);
 }
 
 /**
