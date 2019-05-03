@@ -1,5 +1,6 @@
 package com.example.sengstudio1a.controller;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -21,7 +22,7 @@ import java.util.Map;
 
 public class RegisterCharityController extends AppCompatActivity {
 
-    private static final String TAG = "REGISTER_CHARITY";
+    private static final String TAG = "REGISTER_CHARITY_CONTROLLER";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,6 +62,7 @@ public class RegisterCharityController extends AppCompatActivity {
 
         if (isValidOrganisation && isValidEmail && isValidPhone && isValidPassword) {
             Map<String, String> donor = new HashMap<>();
+            donor.put("type", "charity");
             donor.put("organisation", inputOrganisation.getText().toString());
             donor.put("email", inputEmail.getText().toString());
             donor.put("phone", inputPhone.getText().toString());
@@ -69,7 +71,7 @@ public class RegisterCharityController extends AppCompatActivity {
 
             // Add to the database
             FirebaseFirestore db = FirebaseFirestore.getInstance();
-            db.collection("charities")
+            db.collection("users")
                     .add(donor)
                     .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
                         @Override
@@ -83,17 +85,41 @@ public class RegisterCharityController extends AppCompatActivity {
                             Log.w(TAG, "Error adding document", e);
                         }
                     });
+
+            Intent intent = new Intent(this, RegisterSuccessController.class);
+            startActivity(intent);
         } else {
             TextView tvPasswordHint = findViewById(R.id.tvPasswordHint);
             TextView tvOrganisationError = findViewById(R.id.tvOrganisationError);
 
-            // Reset visibility
-            tvOrganisationError.setVisibility(View.INVISIBLE);
-            tvPasswordHint.setVisibility(View.INVISIBLE);
-
+            hideTextViews();
             // Display the appropriate hints/error messages
             if (!isValidOrganisation) tvOrganisationError.setVisibility(View.VISIBLE);
             if (!isValidPassword) tvPasswordHint.setVisibility(View.VISIBLE);
         }
     }
+
+    /**
+     * Hide the appropriate TextViews.
+     *
+     * Hide the tvFirstNameError and tvPasswordHint widgets.
+     */
+    private void hideTextViews() {
+        TextView tvOrganisationError = findViewById(R.id.tvOrganisationError);
+        tvOrganisationError.setVisibility(View.INVISIBLE);
+
+        TextView tvPasswordHint = findViewById(R.id.tvPasswordHint);
+        tvPasswordHint.setVisibility(View.INVISIBLE);
+    }
+
+    /**
+     * Go to the login screen.
+     *
+     * @param v the view that received the onClick event
+     */
+    public void alreadyMemberOnClick(View v) {
+        Intent intent = new Intent(this, LoginController.class);
+        startActivity(intent);
+    }
+
 }

@@ -1,97 +1,105 @@
 package com.example.sengstudio1a.controller;
 
+import android.content.Intent;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 
+import com.example.sengstudio1a.Placeholder;
 import com.example.sengstudio1a.R;
+import com.example.sengstudio1a.lib.Hash;
+import com.example.sengstudio1a.lib.observable.BooleanObserver;
+import com.example.sengstudio1a.lib.observable.ObservableBoolean;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
+import java.util.Observable;
 
 public class LoginController extends AppCompatActivity {
 
-    public static HashMap<String, String> database;  // Dummy database
+    private static final String TAG = "LOGIN_CONTROLLER";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);  // TODO: Link to the correct view
+        setContentView(R.layout.login);
 
-        database = new HashMap<String, String>();
-        database.put("Jun", "0b020f03");
-        database.put("John", "0902");
+        /**
+         * Visibility attribute doesn't seem to update properly so I
+         * force the change here. */
+        TextView tvLoginHint = findViewById(R.id.tvLoginHint);
+        tvLoginHint.setVisibility(View.INVISIBLE);
     }
 
     /**
      * Make a login attempt.
      *
-     * Search the database for an entry with the same username and password as
-     * that supplied in the view. Display the appropriate error messages if no
-     * matching entry is found. Otherwise, advance to the next activity.
+     * Search the database for a matching set of credentials and
+     * display the appropriate hints/error messages. Advance to the
+     * next activity if a match is found.
      *
-     * TODO:
-     *  - Access the database
-     *  - Launch the next activity
-     *  - Display the appropriate error messages
+     * @param v the view that received the onClick event
      */
     public void loginOnClick(View v) {
-        EditText editUsername = findViewById(R.id.editUsername);
-        EditText editPassword = findViewById(R.id.editPassword);
+        final EditText inputEmail = findViewById(R.id.inputEmail);
+        final EditText inputPassword = findViewById(R.id.inputPassword);
 
-        if (
-                database.get(editUsername.getText().toString()) != null
-                && database.get(editUsername.getText().toString()).equals(
-                        hash(editPassword.getText().toString()))
-        ) {
-            // Launch the next activity
-        } else {
-            // Display the appropriate error messages
-        }
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("users")
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if (task.isSuccessful()) {
+                            ObservableBoolean isMatchFound = new ObservableBoolean(false);
+                            isMatchFound.addObserver(new BooleanObserver() {
+                                @Override
+                                public void update(Observable o, Object arg) {
+                                    if ((Boolean) arg) {
+                                        Intent intent = new Intent(getApplicationContext(), Placeholder.class);
+                                        startActivity(intent);
+                                    } else {
+                                        // Show login hint
+                                        TextView tvLoginHint = findViewById(R.id.tvLoginHint);
+                                        tvLoginHint.setVisibility(View.VISIBLE);
+                                    }
+                                }
+                            });
+
+                            int count = 0;
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                if (
+                                        document.get("email").equals(inputEmail.getText().toString())
+                                        && document.get("password").equals(new Hash().hash(
+                                                inputPassword.getText().toString()))
+                                    ) {
+                                    isMatchFound.setValue(true);
+                                }
+
+                                if (++count == task.getResult().size()) isMatchFound.setValue(false);
+                            }
+                        } else {
+                            Log.w(TAG, "Error getting documents.", task.getException());
+                        }
+                    }
+                });
     }
 
     /**
-     * Return the hashed version of the given String.
+     * Go to the registration screen.
      *
-     * Hash the given String using SHA-256 and return its hexadecimal
-     * representation. Return null when the hashing operation is not
-     * found.
-     *
-     * @param s String to be hashed
-     * @return  Hexadecimal representation of the hashed String
+     * @param v the view that received the onClick event
      */
-    private String hash(String s) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] encodedHash = digest.digest(
-                    s.getBytes(StandardCharsets.UTF_8));  // Requires Android 4.4 (KitKat)
-            return bytesToHex(encodedHash);
-        } catch (NoSuchAlgorithmException e) {
-            // Log: NoSuchAlgorithmException when looking for SHA-256
-            //      under MessageDigest object.
-        }
-        return null;
-    }
-
-    /**
-     * Return the hexadecimal representation of the given byte array.
-     *
-     * @param bytes Byte array to be converted to hexadecimal
-     * @return      Hexadecimal representation of the converted byte array
-     */
-    private String bytesToHex(byte[] bytes) {
-        StringBuffer hexString = new StringBuffer();
-        for (int i = 0; i < bytes.length; i++) {
-            String hex = Integer.toHexString(0xff & bytes[i]);
-            if (hex.length() == 1) {
-                hexString.append("0");
-            }
-            hexString.append(hex);
-        }
-        return hexString.toString();
+    public void noAccountOnClick(View v) {
+        Intent intent = new Intent(this, RegisterDonorController.class);
+        startActivity(intent);
     }
 
 }
