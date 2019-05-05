@@ -16,6 +16,8 @@ import com.example.sengstudio1a.lib.observable.BooleanObserver;
 import com.example.sengstudio1a.lib.observable.ObservableBoolean;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -25,11 +27,14 @@ import java.util.Observable;
 public class LoginController extends AppCompatActivity {
 
     private static final String TAG = "LOGIN_CONTROLLER";
+    private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.login);
+
+        mAuth = FirebaseAuth.getInstance();
 
         /**
          * Visibility attribute doesn't seem to update properly so I
@@ -73,12 +78,16 @@ public class LoginController extends AppCompatActivity {
                                 }
                             });
 
+                            mAuth.getCurrentUser().reload();
+                            FirebaseUser user = mAuth.getCurrentUser();
+
                             int count = 0;
                             for (QueryDocumentSnapshot document : task.getResult()) {
                                 if (
                                         document.get("email").equals(inputEmail.getText().toString())
                                         && document.get("password").equals(new Hash().hash(
                                                 inputPassword.getText().toString()))
+                                        && user.isEmailVerified()
                                     ) {
                                     isMatchFound.setValue(true);
                                 }
@@ -98,7 +107,7 @@ public class LoginController extends AppCompatActivity {
      * @param v the view that received the onClick event
      */
     public void noAccountOnClick(View v) {
-        Intent intent = new Intent(this, RegisterDonorController.class);
+        Intent intent = new Intent(this, RegisterSelectController.class);
         startActivity(intent);
     }
 

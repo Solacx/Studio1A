@@ -1,8 +1,19 @@
 package com.example.sengstudio1a.lib;
 
+import android.support.annotation.NonNull;
+import android.util.Log;
 import android.widget.EditText;
 
+import com.example.sengstudio1a.lib.observable.ObservableBoolean;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
+
 public class Validator {
+
+    private static final String TAG = "VALIDATOR";
 
     public Validator() {}
 
@@ -39,49 +50,42 @@ public class Validator {
         return (!email.matches("[ ]+") && email.matches(".*[@].*"));
     }
 
-    // -------------
-    // DOES NOT WORK
-    // -------------
-//    /**
-//     * Check that the email is not already in use.
-//     *
-//     * Collect a list of the emails of the registered users (donors and
-//     * charities), then compare the list to the email being checked
-//     * for.
-//     *
-//     * @param email the email to check for
-//     * @return      true if the email address is not already in use;
-//     *              false otherwise
-//     */
-//    public boolean isEmailRegistered(String email) {
-//        FirebaseFirestore db = FirebaseFirestore.getInstance();
-//        CollectionReference donorsCollectionRef = db.collection("donors");
-//        CollectionReference charitiesCollectionRef = db.collection("charities");
-//        final List<String> registeredEmails = new ArrayList<>();
-//
-//         // Search donors
-//        Query donorsQuery = donorsCollectionRef
-//                .whereEqualTo("email", email);
-//        donorsQuery.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-//            @Override
-//            public void onComplete(@NonNull Task<QuerySnapshot> task) {
-//                if (task.isSuccessful()) {
-//                    System.out.println("1");
-//                    for (QueryDocumentSnapshot doc : task.getResult()) {
-//                        registeredEmails.add(("" + doc.get("email")));
-//                    }
-//                    System.out.println("2");
-//                } else {
-//                    Log.d(TAG, "Error getting records.", task.getException());
-//                }
-//            }
-//        });
-//        // Search charities
-//
-//        System.out.println("3");
-//
-//        return registeredEmails.size();
-//    }
+    /**
+     * Check that there is no conflicting user with the same email.
+     *
+     * Check that there is no conflicting user then update the
+     * observableBoolean. The value will be set to true if there is no
+     * conflicting account; false otherwise.
+     *
+     * @param email             email to check for
+     * @param observableBoolean instance of ObservableBoolean
+     */
+    public void isEmailAvailable(final String email, final ObservableBoolean observableBoolean) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("users")
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if (task.isSuccessful()) {
+                            int count = 0;
+                            boolean isMatched = false;
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                if (document.get("email").equals(email)) {
+                                    observableBoolean.setValue(true);
+                                    isMatched = true;
+                                }
+
+                                if (++count == task.getResult().size() && !isMatched) {
+                                    observableBoolean.setValue(false);
+                                }
+                            }
+                        } else {
+                            Log.w(TAG, "Error getting documents.", task.getException());
+                        }
+                    }
+                });
+    }
 
     /**
      * Validate that a field contains a proper phone number.
@@ -122,4 +126,5 @@ public class Validator {
                         && field.getText().toString().matches(".*[^a-zA-Z0-9 ].*")
         );
     }
+
 }
