@@ -1,5 +1,6 @@
 package com.example.sengstudio1a.controller;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -21,7 +22,7 @@ import java.util.Map;
 
 public class RegisterDonorController extends AppCompatActivity {
 
-    private static final String TAG = "REGISTER_DONOR";
+    private static final String TAG = "REGISTER_DONOR_CONTROLLER";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +67,7 @@ public class RegisterDonorController extends AppCompatActivity {
                 && isValidPhone && isValidPassword
             ) {
             Map<String, String> donor = new HashMap<>();
+            donor.put("type", "donor");
             donor.put("firstName", inputFirstName.getText().toString());
             donor.put("lastName", inputLastName.getText().toString());
             donor.put("email", inputEmail.getText().toString());
@@ -75,7 +77,7 @@ public class RegisterDonorController extends AppCompatActivity {
 
             // Add to the database
             FirebaseFirestore db = FirebaseFirestore.getInstance();
-            db.collection("donors")
+            db.collection("users")
                     .add(donor)
                     .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
                         @Override
@@ -89,17 +91,41 @@ public class RegisterDonorController extends AppCompatActivity {
                             Log.w(TAG, "Error adding document", e);
                         }
                     });
+
+            Intent intent = new Intent(this, RegisterSuccessController.class);
+            startActivity(intent);
         } else {
             TextView tvPasswordHint = findViewById(R.id.tvPasswordHint);
             TextView tvFirstNameError = findViewById(R.id.tvFirstNameError);
 
-            // Reset visibility
-            tvFirstNameError.setVisibility(View.INVISIBLE);
-            tvPasswordHint.setVisibility(View.INVISIBLE);
-
+            hideTextViews();
             // Display the appropriate hints/error messages
             if (!isValidFirstName) tvFirstNameError.setVisibility(View.VISIBLE);
             if (!isValidPassword) tvPasswordHint.setVisibility(View.VISIBLE);
         }
     }
+
+    /**
+     * Hide the appropriate TextViews.
+     *
+     * Hide the tvFirstNameError and tvPasswordHint widgets.
+     */
+    private void hideTextViews() {
+        TextView tvFirstNameError = findViewById(R.id.tvFirstNameError);
+        tvFirstNameError.setVisibility(View.INVISIBLE);
+
+        TextView tvPasswordHint = findViewById(R.id.tvPasswordHint);
+        tvPasswordHint.setVisibility(View.INVISIBLE);
+    }
+
+    /**
+     * Go to the login screen.
+     *
+     * @param v the view that received the onClick event
+     */
+    public void alreadyMemberOnClick(View v) {
+        Intent intent = new Intent(this, LoginController.class);
+        startActivity(intent);
+    }
+
 }
